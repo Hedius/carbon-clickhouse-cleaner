@@ -27,6 +27,7 @@ type Cleaner struct {
 }
 
 func (c *Cleaner) Clean() error {
+	log.Info("Starting cleanup...")
 	_, err := c.ch.Open()
 	if err != nil {
 		log.Error("Error opening ClickHouse connection: ", err)
@@ -58,7 +59,7 @@ func (c *Cleaner) Clean() error {
 		return err
 	}
 
-	// 3. Delete the path with alter statements.
+	// 3. Delete the paths from index/tagged tables with alter statements.
 	if len(obsoletePlainPaths) > 0 {
 		err = c.ch.DeletePaths(c.ch.IndexTable, timeStampPlain)
 		if err != nil {
@@ -72,7 +73,8 @@ func (c *Cleaner) Clean() error {
 		}
 	}
 
-	return err
+	log.Info("Cleanup finished")
+	return nil
 }
 
 func main() {

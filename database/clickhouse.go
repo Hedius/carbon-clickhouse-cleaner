@@ -95,6 +95,29 @@ func (ch *ClickHouse) DeletePoints(maxTimeStampPlain time.Time, maxTimeStampTagg
 	return err
 }
 
+func (ch *ClickHouse) DeletePointsDirectly(maxTimeStampPlain time.Time, maxTimeStampTagged time.Time) error {
+	var minTimeStamp time.Time
+	if maxTimeStampPlain.After(maxTimeStampTagged) {
+		minTimeStamp = maxTimeStampTagged
+	} else {
+		minTimeStamp = maxTimeStampTagged
+	}
+	query := fmt.Sprintf(
+		`DELETE FROM %s WHERE Date <= toDate(?) AND Path IN (
+					SELECT DISTINCT Path
+					FROM %s
+					GROUP BY Path
+					HAVING MAX(Timestamp) <= toUInt32(?)
+				)`, ch.ValueTable, ch.ValueTable)
+	log.Infof("[%v] Triggering direct delete", ch.ValueTable)
+	_, err := ch.con.Exec(query, minTimeStamp, minTimeStamp)
+	if err != nil {
+		log.Errorf("[%v] Error while deleting points directly: %v", ch.ValueTable, err)
+	}
+	log.Infof("[%v] Direct delete executed", ch.ValueTable)
+	return err
+}
+
 func (ch *ClickHouse) DeletePaths(table string, maxTimeStamp time.Time) error {
 	query := fmt.Sprintf(
 		`ALTER TABLE %s DELETE WHERE Date <= toDate(?)
