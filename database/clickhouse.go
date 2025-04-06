@@ -18,6 +18,13 @@ type ClickHouse struct {
 	con *sql.DB
 }
 
+func logQuery(query string, args ...any) {
+	log.WithFields(log.Fields{
+		"query": query,
+		"args":  args,
+	}).Info("Executing SQL statement")
+}
+
 func (ch *ClickHouse) getOnClusterClause() string {
 	if ch.Cluster != "" {
 		return fmt.Sprintf("ON CLUSTER %s", ch.Cluster)
@@ -49,13 +56,23 @@ func (ch *ClickHouse) Close() {
 	}
 }
 
+func (ch *ClickHouse) Query(query string, args ...any) (*sql.Rows, error) {
+	logQuery(query, args...)
+	return ch.con.Query(query, args...)
+}
+
+func (ch *ClickHouse) Exec(query string, args ...any) (sql.Result, error) {
+	logQuery(query, args...)
+	return ch.con.Exec(query, args...)
+}
+
 func (ch *ClickHouse) GetPathsToDelete(table string, maxTimeStamp time.Time) ([]string, error) {
 	query := fmt.Sprintf(
 		`SELECT DISTINCT Path, toDateTime(Max(Version)) AS MaxVersion
 				FROM %s
 				GROUP BY Path
 				HAVING MAX(Version) <= toUInt32(?)`, table)
-	rows, err := ch.con.Query(query, maxTimeStamp)
+	rows, err := ch.Query(query, maxTimeStamp)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -95,7 +112,7 @@ func (ch *ClickHouse) DeletePoints(maxTimeStampPlain time.Time, maxTimeStampTagg
 					HAVING MAX(Version) <= toUInt32(?)
 				)`, ch.ValueTable, ch.getOnClusterClause(), ch.IndexTable, ch.TaggedTable)
 	log.Infof("[%v] Triggering delete", ch.ValueTable)
-	_, err := ch.con.Exec(query, minTimeStamp, maxTimeStampPlain, maxTimeStampTagged)
+	_, err := ch.Exec(query, minTimeStamp, maxTimeStampPlain, maxTimeStampTagged)
 	if err != nil {
 		log.Errorf("[%v] Error while deleting points: %v", ch.ValueTable, err)
 	}
@@ -118,7 +135,7 @@ func (ch *ClickHouse) DeletePointsDirectly(maxTimeStampPlain time.Time, maxTimeS
 					HAVING MAX(Timestamp) <= toUInt32(?)
 				)`, ch.ValueTable, ch.getOnClusterClause(), ch.ValueTable)
 	log.Infof("[%v] Triggering direct delete", ch.ValueTable)
-	_, err := ch.con.Exec(query, minTimeStamp, minTimeStamp)
+	_, err := ch.Exec(query, minTimeStamp, minTimeStamp)
 	if err != nil {
 		log.Errorf("[%v] Error while deleting points directly: %v", ch.ValueTable, err)
 	}
@@ -136,7 +153,7 @@ func (ch *ClickHouse) DeletePaths(table string, maxTimeStamp time.Time) error {
 					HAVING MAX(Version) <= toUInt32(?)
 				)`, table, ch.getOnClusterClause(), table)
 	log.Infof("[%v] Triggering delete", table)
-	_, err := ch.con.Exec(query, maxTimeStamp, maxTimeStamp)
+	_, err := ch.Exec(query, maxTimeStamp, maxTimeStamp)
 	if err != nil {
 		log.Errorf("[%v] Error while deleting index: %v", table, err)
 		return err
