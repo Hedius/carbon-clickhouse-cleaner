@@ -86,10 +86,12 @@ func (ch *ClickHouse) DeletePoints(maxTimeStampPlain time.Time, maxTimeStampTagg
 					GROUP BY Path
 					HAVING MAX(Version) <= toUInt32(?)
 				)`, ch.ValueTable, ch.IndexTable, ch.TaggedTable)
+	log.Infof("[%v] Triggering delete", ch.ValueTable)
 	_, err := ch.con.Exec(query, minTimeStamp, maxTimeStampPlain, maxTimeStampTagged)
 	if err != nil {
-		log.Errorf("Error deleting points: %v", err)
+		log.Errorf("[%v] Error while deleting points: %v", ch.ValueTable, err)
 	}
+	log.Infof("[%v] Delete executed", ch.ValueTable)
 	return err
 }
 
@@ -102,10 +104,12 @@ func (ch *ClickHouse) DeletePaths(table string, maxTimeStamp time.Time) error {
 					GROUP BY Path
 					HAVING MAX(Version) <= toUInt32(?)
 				)`, table, table)
+	log.Infof("[%v] Triggering delete", table)
 	_, err := ch.con.Exec(query, maxTimeStamp, maxTimeStamp)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("[%v] Error while deleting index: %v", table, err)
 		return err
 	}
+	log.Infof("[%v] Delete executed", table)
 	return err
 }
