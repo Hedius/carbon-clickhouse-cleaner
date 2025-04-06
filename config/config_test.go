@@ -20,6 +20,7 @@ connection-string = "bla"
 value-table = "test"
 index-table = "test1"
 tagged-table = "test2"
+cluster = "eh"
 `
 	var cfg Config
 	err := toml.Unmarshal([]byte(input), &cfg)
@@ -38,6 +39,7 @@ tagged-table = "test2"
 		ValueTable:       "test",
 		IndexTable:       "test1",
 		TaggedTable:      "test2",
+		Cluster:          "eh",
 	}
 
 	assert.Equal(t, expected, &cfg)

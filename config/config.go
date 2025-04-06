@@ -22,6 +22,7 @@ type ClickHouse struct {
 	ValueTable       string `toml:"value-table"       json:"value-table"       comment:"Name of value table. graphite by default."`
 	IndexTable       string `toml:"index-table"       json:"index-table"       comment:"Name of index table in graphite_index by default."`
 	TaggedTable      string `toml:"tagged-table"      json:"tagged-table"      comment:"Name of tagged table in graphite_tagged by default."`
+	Cluster          string `toml:"cluster"           json:"cluster"           comment:"Cluster to use"`
 }
 
 // Config is the main config struct.
@@ -43,6 +44,7 @@ func New() *Config {
 			ValueTable:       "graphite",
 			IndexTable:       "graphite_index",
 			TaggedTable:      "graphite_tagged",
+			Cluster:          "",
 		},
 	}
 	return cfg

@@ -13,8 +13,16 @@ type ClickHouse struct {
 	ValueTable       string
 	IndexTable       string
 	TaggedTable      string
+	Cluster          string
 
 	con *sql.DB
+}
+
+func (ch *ClickHouse) getOnClusterClause() string {
+	if ch.Cluster != "" {
+		return fmt.Sprintf("ON CLUSTER %s", ch.Cluster)
+	}
+	return ""
 }
 
 // Open gets a CH connection pool
@@ -75,7 +83,7 @@ func (ch *ClickHouse) DeletePoints(maxTimeStampPlain time.Time, maxTimeStampTagg
 		minTimeStamp = maxTimeStampTagged
 	}
 	query := fmt.Sprintf(
-		`DELETE FROM %s WHERE Date <= toDate(?) AND Path IN (
+		`DELETE FROM %s %s WHERE Date <= toDate(?) AND Path IN (
 					SELECT DISTINCT Path
 					FROM %s
 					GROUP BY Path
@@ -85,7 +93,7 @@ func (ch *ClickHouse) DeletePoints(maxTimeStampPlain time.Time, maxTimeStampTagg
 					FROM %s
 					GROUP BY Path
 					HAVING MAX(Version) <= toUInt32(?)
-				)`, ch.ValueTable, ch.IndexTable, ch.TaggedTable)
+				)`, ch.ValueTable, ch.getOnClusterClause(), ch.IndexTable, ch.TaggedTable)
 	log.Infof("[%v] Triggering delete", ch.ValueTable)
 	_, err := ch.con.Exec(query, minTimeStamp, maxTimeStampPlain, maxTimeStampTagged)
 	if err != nil {
@@ -103,12 +111,12 @@ func (ch *ClickHouse) DeletePointsDirectly(maxTimeStampPlain time.Time, maxTimeS
 		minTimeStamp = maxTimeStampTagged
 	}
 	query := fmt.Sprintf(
-		`DELETE FROM %s WHERE Date <= toDate(?) AND Path IN (
+		`DELETE FROM %s %s WHERE Date <= toDate(?) AND Path IN (
 					SELECT DISTINCT Path
 					FROM %s
 					GROUP BY Path
 					HAVING MAX(Timestamp) <= toUInt32(?)
-				)`, ch.ValueTable, ch.ValueTable)
+				)`, ch.ValueTable, ch.getOnClusterClause(), ch.ValueTable)
 	log.Infof("[%v] Triggering direct delete", ch.ValueTable)
 	_, err := ch.con.Exec(query, minTimeStamp, minTimeStamp)
 	if err != nil {
@@ -120,13 +128,13 @@ func (ch *ClickHouse) DeletePointsDirectly(maxTimeStampPlain time.Time, maxTimeS
 
 func (ch *ClickHouse) DeletePaths(table string, maxTimeStamp time.Time) error {
 	query := fmt.Sprintf(
-		`ALTER TABLE %s DELETE WHERE Date <= toDate(?)
+		`ALTER TABLE %s %s DELETE WHERE Date <= toDate(?)
                 AND Path IN (
 					SELECT DISTINCT Path
 					FROM %s
 					GROUP BY Path
 					HAVING MAX(Version) <= toUInt32(?)
-				)`, table, table)
+				)`, table, ch.getOnClusterClause(), table)
 	log.Infof("[%v] Triggering delete", table)
 	_, err := ch.con.Exec(query, maxTimeStamp, maxTimeStamp)
 	if err != nil {

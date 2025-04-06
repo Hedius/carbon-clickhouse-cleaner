@@ -114,6 +114,7 @@ func main() {
 			ValueTable:       cfg.ClickHouse.ValueTable,
 			IndexTable:       cfg.ClickHouse.IndexTable,
 			TaggedTable:      cfg.ClickHouse.TaggedTable,
+			Cluster:          cfg.ClickHouse.Cluster,
 		},
 	}
 
