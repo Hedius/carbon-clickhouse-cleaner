@@ -3,9 +3,10 @@ package database
 import (
 	"database/sql"
 	"fmt"
+	"time"
+
 	_ "github.com/ClickHouse/clickhouse-go/v2"
 	log "github.com/sirupsen/logrus"
-	"time"
 )
 
 type ClickHouse struct {
@@ -14,6 +15,7 @@ type ClickHouse struct {
 	IndexTable       string
 	TaggedTable      string
 	Cluster          string
+	DryRun 			 bool
 
 	con *sql.DB
 }
@@ -63,6 +65,9 @@ func (ch *ClickHouse) Query(query string, args ...any) (*sql.Rows, error) {
 
 func (ch *ClickHouse) Exec(query string, args ...any) (sql.Result, error) {
 	logQuery(query, args...)
+	if ch.DryRun {
+		return nil, nil
+	}
 	return ch.con.Exec(query, args...)
 }
 
@@ -100,7 +105,7 @@ func (ch *ClickHouse) DeletePoints(maxTimeStampPlain time.Time, maxTimeStampTagg
 		minTimeStamp = maxTimeStampTagged
 	}
 	query := fmt.Sprintf(
-		`DELETE FROM %s %s WHERE Date <= toDate(?) AND Path IN (
+		`DELETE FROM %s %s WHERE Date <= toDate(?) AND (Path IN (
 					SELECT DISTINCT Path
 					FROM %s
 					GROUP BY Path
@@ -110,7 +115,7 @@ func (ch *ClickHouse) DeletePoints(maxTimeStampPlain time.Time, maxTimeStampTagg
 					FROM %s
 					GROUP BY Path
 					HAVING MAX(Version) <= toUInt32(?)
-				)`, ch.ValueTable, ch.getOnClusterClause(), ch.IndexTable, ch.TaggedTable)
+				))`, ch.ValueTable, ch.getOnClusterClause(), ch.IndexTable, ch.TaggedTable)
 	log.Infof("[%v] Triggering delete", ch.ValueTable)
 	_, err := ch.Exec(query, minTimeStamp, maxTimeStampPlain, maxTimeStampTagged)
 	if err != nil {
@@ -146,7 +151,7 @@ func (ch *ClickHouse) DeletePointsDirectly(maxTimeStampPlain time.Time, maxTimeS
 func (ch *ClickHouse) DeletePaths(table string, maxTimeStamp time.Time) error {
 	query := fmt.Sprintf(
 		`ALTER TABLE %s %s DELETE WHERE Date <= toDate(?)
-                AND Path IN (
+			AND Path IN (
 					SELECT DISTINCT Path
 					FROM %s
 					GROUP BY Path

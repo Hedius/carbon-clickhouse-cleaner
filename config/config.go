@@ -13,8 +13,8 @@ type Duration time.Duration
 
 type Common struct {
 	MaxAgePlain  Duration `toml:"max-age-plain"  json:"max-age-plain"  comment:"Max age of plain series before they get dropped. 14d by default."`
-	MaxAgeTagged Duration `toml:"max-age-tagged" json:"max-age-tagged" comment:"Max age of tag before they get dropped. 14d by default."`
-	LoopInterval Duration `toml:"loop-interval"  json:"loop-interval"  comment:"Check interval. 1h by default."`
+	MaxAgeTagged Duration `toml:"max-age-tagged" json:"max-age-tagged" comment:"Max age of tagged series before they get dropped. 14d by default."`
+	LoopInterval Duration `toml:"loop-interval"  json:"loop-interval"  comment:"Check interval. 7d by default."`
 }
 
 type ClickHouse struct {

@@ -1,10 +1,10 @@
 package main
 
 import (
-	"carbon-clickhouse-cleaner/config"
-	"carbon-clickhouse-cleaner/database"
 	"flag"
 	"fmt"
+	"graphite-clickhouse-cleaner/config"
+	"graphite-clickhouse-cleaner/database"
 	"os"
 	"time"
 
@@ -16,14 +16,14 @@ const Version = "0.1.0"
 // 1. config reading
 // 2. setup logging
 // 3. Loop
-//  1. query untagged -> Delete Untagged -> Return values (paths)
-//  2. query tagged -> Delete tagged -> Return values
+//  1. query untagged
+//  2. query tagged
 //  3. trigger value delete.
+//  4. delete index/tagged
 
 type Cleaner struct {
 	cfg   *config.Config
-	debug bool
-	ch    database.ClickHouse
+	ch     database.ClickHouse
 }
 
 func (c *Cleaner) Clean() error {
@@ -79,12 +79,12 @@ func (c *Cleaner) Clean() error {
 
 func main() {
 	var err error
-	configFile := flag.String("config", "carbon-clickhouse-cleaner.conf", "path to config file")
+	configFile := flag.String("config", "graphite-clickhouse-cleaner.conf", "path to config file")
 	checkConfig := flag.Bool("check-config", false, "check config file and exit")
 	logLevel := flag.String("loglevel", "debug", "log level")
 	printVersion := flag.Bool("version", false, "print version and exit")
 	oneShot := flag.Bool("one-shot", false, "only run once if set")
-	debug := flag.Bool("debug", true, "enable debug mode (Do not run any delete)")
+	dryRun := flag.Bool("dry-run", true, "enable debug mode (Do not run any delete)")
 
 	flag.Parse()
 
@@ -108,13 +108,13 @@ func main() {
 
 	cleaner := &Cleaner{
 		cfg:   cfg,
-		debug: *debug,
 		ch: database.ClickHouse{
 			ConnectionString: cfg.ClickHouse.ConnectionString,
 			ValueTable:       cfg.ClickHouse.ValueTable,
 			IndexTable:       cfg.ClickHouse.IndexTable,
 			TaggedTable:      cfg.ClickHouse.TaggedTable,
 			Cluster:          cfg.ClickHouse.Cluster,
+			DryRun: 		  *dryRun,
 		},
 	}
 

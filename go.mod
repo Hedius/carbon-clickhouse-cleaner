@@ -1,4 +1,4 @@
-module carbon-clickhouse-cleaner
+module graphite-clickhouse-cleaner
 
 go 1.24
 
