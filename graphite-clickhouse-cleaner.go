@@ -84,7 +84,7 @@ func main() {
 	logLevel := flag.String("loglevel", "debug", "log level")
 	printVersion := flag.Bool("version", false, "print version and exit")
 	oneShot := flag.Bool("one-shot", false, "only run once if set")
-	dryRun := flag.Bool("dry-run", true, "enable debug mode (Do not run any delete)")
+	dryRun := flag.Bool("dry-run", false, "enable debug mode (Do not run any delete)")
 
 	flag.Parse()
 
