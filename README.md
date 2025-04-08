@@ -12,14 +12,14 @@ Firstly, query all dead metrics from the index tables. Paths are logged at level
 
 ```sql
 SELECT DISTINCT Path, toDateTime(Max(Version)) AS MaxVersion
-				FROM graphite_index
-				GROUP BY Path
-				HAVING MAX(Version) <= toUInt32(toDateTime('XXXX-XX-XX XX:XX:XX'));
-SELECT DISTINCT Path, toDateTime(Max(Version)) AS MaxVersion
-				FROM graphite_tagged
-				GROUP BY Path
-				HAVING MAX(Version) <= toUInt32(toDateTime('XXXX-XX-XX XX:XX:XX'));
+FROM graphite_index
+GROUP BY Path
+HAVING MAX(Version) <= toUInt32(toDateTime('XXXX-XX-XX XX:XX:XX'));
 
+SELECT DISTINCT Path, toDateTime(Max(Version)) AS MaxVersion
+FROM graphite_tagged
+GROUP BY Path
+HAVING MAX(Version) <= toUInt32(toDateTime('XXXX-XX-XX XX:XX:XX'));
 ```
 
 ### Delete Points
@@ -27,16 +27,16 @@ Secondly, if one of the both query returned Paths, then a `DELETE FROM` is trigg
 
 ```sql
 DELETE FROM graphite_ng WHERE Date <= toDate(toDateTime('X')) AND (Path IN (
-					SELECT DISTINCT Path
-					FROM graphite_index
-					GROUP BY Path
-					HAVING MAX(Version) <= toUInt32(toDateTime('X'))
-				) OR Path IN (
-                	SELECT DISTINCT Path
-					FROM graphite_tagged
-					GROUP BY Path
-					HAVING MAX(Version) <= toUInt32(toDateTime('X'))
-                ))
+	SELECT DISTINCT Path
+	FROM graphite_index
+	GROUP BY Path
+	HAVING MAX(Version) <= toUInt32(toDateTime('X'))
+) OR Path IN (
+    SELECT DISTINCT Path
+	FROM graphite_tagged
+	GROUP BY Path
+	HAVING MAX(Version) <= toUInt32(toDateTime('X'))
+))
 ```
 
 ### Delete Index
@@ -46,23 +46,23 @@ Therefore, run the tool like once per week etc...
 Reason why this is done is that the value tables do not trigger merges that often.
 
 ```sql
-ALTER TABLE %s %s DELETE WHERE Date <= toDate(?)
+ALTER TABLE %s DELETE WHERE Date <= toDate('X')
 AND Path IN (
     SELECT DISTINCT Path
-	FROM %s
-	GROUP BY Path
-	HAVING MAX(Version) <= toUInt32(toDateTime('X'))
+    FROM %s
+    GROUP BY Path
+    HAVING MAX(Version) <= toUInt32(toDateTime('X'))
 )
 ```
 
 #### Unused Direct Point delete
 If you have points without any index you can try this query to delete them:
 ```sql
-DELETE FROM %s %s WHERE Date <= toDate('X') AND Path IN (
-					SELECT DISTINCT Path
-					FROM %s
-					GROUP BY Path
-					HAVING MAX(Timestamp) <= toUInt32(toDateTime('x'))
+DELETE FROM graphite WHERE Date <= toDate('X') AND Path IN (
+    SELECT DISTINCT Path
+	FROM graphite
+	GROUP BY Path
+    HAVING MAX(Timestamp) <= toUInt32(toDateTime('x'))
 )
 ```
 
