@@ -17,6 +17,9 @@ gen
 *.so
 *.dylib
 
+# VSCode
+.vscode
+
 # Test binary, built with `go test -c`
 *.test
 
@@ -33,4 +36,4 @@ go.work.sum
 # env file
 .env
 
-/carbon-clickhouse-cleaner.conf
+*.conf
