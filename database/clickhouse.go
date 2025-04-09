@@ -66,6 +66,7 @@ func (ch *ClickHouse) Query(query string, args ...any) (*sql.Rows, error) {
 func (ch *ClickHouse) Exec(query string, args ...any) (sql.Result, error) {
 	logQuery(query, args...)
 	if ch.DryRun {
+		log.Warn("Dry run! Skipping exec.")
 		return nil, nil
 	}
 	return ch.con.Exec(query, args...)

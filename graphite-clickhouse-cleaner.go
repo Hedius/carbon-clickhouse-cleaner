@@ -96,6 +96,10 @@ func main() {
 		return
 	}
 
+	if *dryRun {
+		log.Warn("Dry run! Statements will not be executed")
+	}
+
 	cfg, err := config.ReadConfig(*configFile)
 
 	if err != nil {
